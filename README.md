@@ -1,2 +1,2 @@
-# -ai-code-reviewer
-🤖 Bot que revisa Pull Requests automáticamente usando IA
+# AI Code Reviewer
+Bot que revisa código automáticamente con IA
