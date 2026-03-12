@@ -1,0 +1,49 @@
+import os
+import anthropic
+from github import Github
+
+def get_pr_diff():
+    g = Github(os.environ["GITHUB_TOKEN"])
+    repo = g.get_repo(os.environ["REPO"])
+    pr = repo.get_pull(int(os.environ["PR_NUMBER"]))
+    files = pr.get_files()
+    diff = ""
+    for f in files:
+        diff += f"\n### {f.filename}\n{f.patch or ''}"
+    return pr, diff
+
+def review_code(diff):
+    client = anthropic.Anthropic()
+    message = client.messages.create(
+        model="claude-sonnet-4-20250514",
+        max_tokens=1500,
+        messages=[{
+            "role": "user",
+            "content": f"""You are an expert code reviewer. Review this PR diff and provide:
+1. 🐛 Bugs or logic errors
+2. 🔒 Security issues
+3. ⚡ Performance improvements
+4. ✅ What's done well
+
+Be concise and actionable. Use markdown.
+
+Diff:
+{diff[:8000]}"""
+        }]
+    )
+    return message.content[0].text
+
+def post_comment(pr, review):
+    pr.create_issue_comment(f"## 🤖 AI Code Review\n\n{review}\n\n---\n*Powered by Claude AI*")
+
+if __name__ == "__main__":
+    pr, diff = get_pr_diff()
+    review = review_code(diff)
+    post_comment(pr, review)
+    print("Review posted!")
+```
+
+**4. requirements.txt**:
+```
+anthropic
+PyGithub
